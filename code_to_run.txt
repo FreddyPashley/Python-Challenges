@@ -1,5 +1,0 @@
-def func1(x, y):
-    return x+y2
-
-r1=func1(2, 3)
-print(r1)
