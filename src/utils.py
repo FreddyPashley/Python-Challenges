@@ -33,7 +33,7 @@ def sterilise(x:str) -> list:
     return lines
 
 
-def check(code:str, functions:list=[], calls:list=[], variables:list=[], expected_output=None) -> bool:
+def check(code:str, functions:list=[], calls:list=[], variables:list=[], initial_code:list=[], expected_output=None) -> bool:
     """
     The main bit (technical term)
     """
@@ -41,6 +41,8 @@ def check(code:str, functions:list=[], calls:list=[], variables:list=[], expecte
     code_lines = sterilise(code)
 
     # Run python to catch normal errors
+    for line in initial_code[::-1]:
+        code_lines.insert(0, line)
     code_str = "\n".join(code_lines)
     with open("code_to_run.txt","w") as f:
         f.write(code_str)
@@ -55,6 +57,9 @@ def check(code:str, functions:list=[], calls:list=[], variables:list=[], expecte
             before, after = out.replace(out.split(":")[-1], ""), out.split(":")[-1]
             before = before.split()[-1]
             return " ".join([before, after])
+
+    for i in range(len(initial_code)):
+        code_lines.pop(0)
 
     # Get idea of expected order from prereq
     look_for = {}
@@ -77,19 +82,42 @@ def check(code:str, functions:list=[], calls:list=[], variables:list=[], expecte
     actual = {}
     for i, line in enumerate(code_lines):
         if "def " in line:
-            # check against short desc for preset functions (e.g. add two args, bubble sort, etc)
             function_call = line.replace("def ","").replace(":","")
             function_call = function_call.replace(")","")
             function_name = function_call.split("(")[0]
-            params = [p.strip() for p in function_call.replace(function_name+"(","").strip(")").split(",")]
-            actual[str(len(actual.keys()))] = f"function {function_name} {' '.join(params)}"
+            if function_name in [f.name for f in functions]:
+                for f_obj in functions:
+                    if f_obj.name == function_name:
+                        break
+                short_desc = f_obj.short_description
+                if short_desc:
+                    if short_desc == "bubbleSort":
+                        # Check for two for loops with correct indent
+                        for1indent = None
+                        for line in code_lines:
+                            if "for " in line:
+                                if for1indent is None:
+                                    for1indent = 0
+                                    for c in line:
+                                        if c == " ": for1indent += 1
+                                        else: break
+                                else:
+                                    for2indent = 0
+                                    for c in line:
+                                        if c == " ": for2indent += 1
+                                        else: break
+                                    break
+                        if for2indent <= for1indent:
+                            return "Your function doesn't have two for loops inside each other"
+                params = [p.strip() for p in function_call.replace(function_name+"(","").strip(")").split(",")]
+                actual[str(len(actual.keys()))] = f"function {function_name} {' '.join(params)}"
         if "=" in line and "==" not in line:
             lhs, rhs = line.split("=")
             actual[str(len(actual.keys()))] = f"assignment {lhs} {rhs}"
         if "return " in line:
             to_return = line.split("return")[1].strip()
             actual[str(len(actual.keys()))] = f"return {to_return}"
-        if "(" in line and "def " not in line and "=" not in line:
+        if "(" in line and "def " not in line and "=" not in line and line.split("(")[0] in [c.name for c in calls]:
             lhs, rhs = line.split("(")
             rhs = rhs.strip(")")
             actual[str(len(actual.keys()))] = f"call {lhs} {rhs}"
@@ -107,6 +135,8 @@ def check(code:str, functions:list=[], calls:list=[], variables:list=[], expecte
         msg = "Internal error - lengths do not match"
         raise Exception(msg)
         """
+    print(actual)
+    print(look_for)
     match = True
     for i in range(len(actual.keys())):
         a, l = actual[str(i)], look_for[str(i)]
@@ -164,4 +194,4 @@ def check(code:str, functions:list=[], calls:list=[], variables:list=[], expecte
                         match = f"Name ({l.name}) not found"
                         break
     
-    return match, too_much_code
+    return match, out, too_much_code

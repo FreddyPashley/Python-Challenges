@@ -13,8 +13,9 @@
     <hr>
     <p>{{notif}}</p>
     <form action="{{url_for('index')}}" method="post">
-        <textarea name="code" id="code" cols="30" rows="10">{{code}}</textarea>
-        <input type="submit" value="Try">
+        <textarea name="code" id="code" cols="50" rows="15">{{code}}</textarea>
+        <input type="submit" value="Submit">
     </form>
+    <p>{{output}}</p>
 </body>
 </html>

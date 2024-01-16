@@ -9,11 +9,12 @@ app = flask.Flask(__name__)
 def index():
     if flask.request.method == "POST":
         code = flask.request.form["code"]
-        is_correct = check(code, **addTwoNums)
-        print(is_correct)
+        is_correct = check(code, **bubbleSort)
         too_long = False
+        output=""
         if type(is_correct) == tuple:
-            too_long = is_correct[1]
+            too_long = is_correct[2]
+            output = is_correct[1]
             is_correct = str(is_correct[0])
         else:
             is_correct = str(is_correct)
@@ -21,7 +22,7 @@ def index():
             is_correct = "Correct!"
         if too_long:
             is_correct += ". (Your code could be more consice)"
-        return flask.render_template("index.html", notif=is_correct, code=code)
+        return flask.render_template("index.html", notif=is_correct, code=code, output=output)
     else:
         return flask.render_template("index.html")
     
