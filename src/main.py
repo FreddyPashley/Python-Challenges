@@ -3,27 +3,20 @@ from function import Function
 from call import Call
 from parameter import Parameter
 from variable import Variable
+import flask
 
-test_input = """
-def func1(x, y):
-    return x + y
-
-r = func1(2, 3)
-print(r)"""
-
-steralised = sterilise(test_input)
-
-is_correct = check(
-    steralised,
-    functions=[
+prerequisites = {
+    "expected_output" : "5",
+    "functions": [
         Function(
             name="func1",
             params=[Parameter("x", int), Parameter("y", int)],
-            short_description="add_args",
+            short_description="add_two_args",
+            expected_return="x+y",
             global_order=0
         )
     ],
-    calls=[
+    "calls": [
         Call(
             name="func1",
             content="2, 3",
@@ -36,5 +29,17 @@ is_correct = check(
             global_order=2
         )
     ]
-    )
-print(is_correct)
+}
+
+app = flask.Flask(__name__)
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if flask.request.method == "POST":
+        code = flask.request.form["code"]
+        is_correct = check(code, **prerequisites)
+        return str(is_correct)
+    else:
+        return flask.render_template("index.html")
+    
+app.run()
